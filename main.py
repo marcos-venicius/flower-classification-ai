@@ -19,10 +19,12 @@ batch_size = 32
 img_width = 180
 img_height = 180
 
+validation_split = 0.2
+
 # dataset for training
 train_ds = image_dataset_from_directory(
     data,
-    validation_split=0.2,
+    validation_split=validation_split,
     subset="training",
     seed=123,
     image_size=(img_height, img_width),
@@ -32,7 +34,7 @@ train_ds = image_dataset_from_directory(
 # dataset for validation
 val_ds = image_dataset_from_directory(
     data,
-    validation_split=0.2,
+    validation_split=validation_split,
     subset="validation",
     seed=123,
     image_size=(img_height, img_width),
@@ -41,4 +43,10 @@ val_ds = image_dataset_from_directory(
 
 class_names = train_ds.class_names
 
-print(class_names)
+AUTOTUNE = tf.data.AUTOTUNE
+
+# keeps the images in memory after they're loaded off disk during the first epoch
+train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+
+# overlaps data preprocessing and model execution while training
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
