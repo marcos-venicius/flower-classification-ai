@@ -5,6 +5,7 @@ from pathlib import Path
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
+import os
 import tensorflow as tf
 from keras.utils import image_dataset_from_directory
 from utils import view_train_results
@@ -15,6 +16,8 @@ data = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
 data = Path(data)
 
 EPOCHS = 10
+
+checkpoint_path = "data/epochs"
 
 # batch size
 batch_size = 32
@@ -82,6 +85,9 @@ model = Sequential([
     layers.Dense(num_classes, name='outputs')
 ])
 
+if os.path.isfile(checkpoint_path + ".index"):
+	model.load_weights(checkpoint_path)
+
 # compile model
 model.compile(
     optimizer='adam',
@@ -89,11 +95,11 @@ model.compile(
     metrics=['accuracy']
 )
 
+initial_epoch = model.optimizer.iterations.numpy() # steps per epoch
+
 cp_callback = tf.keras.callbacks.ModelCheckpoint(
-	filepath="data/epochs",
-	verbose=1,
+	filepath=checkpoint_path,
 	save_weights_only=True,
-	save_freq=50
 )
 
 # run epochs
@@ -101,9 +107,11 @@ history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
+	initial_epoch=initial_epoch,
 	batch_size=batch_size,
 	callbacks=[cp_callback]
 )
 
-# view results
-view_train_results(history, EPOCHS)
+if os.getenv('VIEW_RESULTS') == '1':
+	# view results
+	view_train_results(history, EPOCHS)
