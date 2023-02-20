@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 import PIL
+import sys
 import matplotlib.pyplot as plt
 from pathlib import Path
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
+import numpy as np
 import os
 import tensorflow as tf
 from keras.utils import image_dataset_from_directory
 from utils import view_train_results
+
+test_image_path = None
+
+if len(sys.argv) >= 2 and os.path.isfile(sys.argv[1]):
+	test_image_path = sys.argv[1]
 
 dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
 
 data = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
 data = Path(data)
 
-EPOCHS = 10
+EPOCHS = 20
 
 checkpoint_path = "data/epochs"
 
@@ -115,3 +122,18 @@ history = model.fit(
 if os.getenv('VIEW_RESULTS') == '1':
 	# view results
 	view_train_results(history, EPOCHS)
+
+if test_image_path is not None:
+	img = tf.keras.utils.load_img(test_image_path, target_size=img_size)
+
+	img_array = tf.keras.utils.img_to_array(img)
+	img_array = tf.expand_dims(img_array, 0)
+
+	predictions = model.predict(img_array)
+	score = tf.nn.softmax(predictions[0])
+
+	print(
+		"This image most likely belongs to {} with a {:.2f} percent confidence."
+		.format(class_names[np.argmax(score)], 100 * np.max(score))
+	)
+	
